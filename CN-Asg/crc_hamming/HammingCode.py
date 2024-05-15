@@ -1,69 +1,44 @@
-def encode(message):
-    m = len(message)
-    r = 1
-    while 2 ** r < m + r + 1:
-        r += 1
-
-    encoded_message = ['0'] * (m + r)
-    parity_positions = [2 ** i for i in range(r)]
-
-    j = 0
-    for i in range(1, m + r + 1):
-        if i not in parity_positions:
-            encoded_message[i - 1] = message[j]
-            j += 1
-
-    for i in range(r):
-        parity = 0
-        for j in range(1, m + r + 1):
-            if j & (2 ** i):
-                parity ^= int(encoded_message[j - 1])
-        encoded_message[2 ** i - 1] = str(parity)
-
-    return ''.join(encoded_message)
-
-def decode(received_codeword):
-    r = 1
-    while 2 ** r < len(received_codeword):
-        r += 1
-
-    error_position = 0
-    syndrome = 0
-
-    for i in range(r):
-        parity = 0
-        for j in range(1, len(received_codeword) + 1):
-            if j & (2 ** i):
-                parity ^= int(received_codeword[j - 1])
-        syndrome += parity * (2 ** i)
-
-    if syndrome != 0:
-        error_position = syndrome
-
-    if error_position != 0:
-        # Correct the error
-        received_codeword = list(received_codeword)
-        received_codeword[error_position - 1] = str(int(received_codeword[error_position - 1]) ^ 1)
-        received_codeword = ''.join(received_codeword)
-
-    decoded_message = ''
-    j = 0
-    for i in range(1, len(received_codeword) + 1):
-        if i & (i - 1) != 0:
-            decoded_message += received_codeword[j]
-            j += 1
-
-    return decoded_message
-
 def main():
-    data = input("Enter 7/8 bits data to be transmitted: ")
-    encoded_message = encode(data)
-    print("Transmitted codeword:", encoded_message)
+    data = [0] * 8
+    data_at_rec = [0] * 8
 
-    received_codeword = input("Enter received codeword: ")
+    print("Enter 4 bits of data one by one:")
+    data[7] = int(input("Enter bit 1: "))
+    data[6] = int(input("Enter bit 2: "))
+    data[5] = int(input("Enter bit 3: "))
+    data[3] = int(input("Enter bit 4: "))
 
-    decoded_message = decode(received_codeword)
-    print("Decoded message:", decoded_message)
+    # Calculation of even parity bits
+    data[4] = data[5] ^ data[6] ^ data[7]
+    data[2] = data[3] ^ data[6] ^ data[7]
+    data[1] = data[3] ^ data[5] ^ data[7]
+
+    print("\nEncoded data is:")
+    for i in range(1, 8):
+        print(data[i], end="")
+    print()
+
+    print("\nEnter received data bits one by one:")
+    for i in range(1, 8):
+        data_at_rec[i] = int(input(f"Enter bit {i}: "))
+
+    # Calculation of parity check bits at receiver's end
+    c1 = data_at_rec[1] ^ data_at_rec[3] ^ data_at_rec[5] ^ data_at_rec[7]
+    c2 = data_at_rec[2] ^ data_at_rec[3] ^ data_at_rec[6] ^ data_at_rec[7]
+    c3 = data_at_rec[4] ^ data_at_rec[5] ^ data_at_rec[6] ^ data_at_rec[7]
+    c = c3 * 4 + c2 * 2 + c1
+
+    if c == 0:
+        print("\nCongratulations, there is no error.")
+    elif c > 7 or c < 1:
+        print(f"\nError detected but position {c} is invalid.")
+    else:
+        print(f"\nError at position: {c}")
+        print("Corrected message is:")
+        data_at_rec[c] = 1 if data_at_rec[c] == 0 else 0
+        for i in range(1, 8):
+            print(data_at_rec[i], end="")
+    print()
 
 if __name__ == "__main__":
     main()
